@@ -6,10 +6,13 @@ on:
       - main
 
 jobs:
-  ftp-deploy:
+  deploy:
+    name: Deploy to Hostinger
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Upload Laravel files (root project)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
@@ -23,6 +26,7 @@ jobs:
             .git/**
             .github/**
             node_modules/**
+
       - name: Upload public folder to public_html
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
@@ -31,3 +35,15 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./public/
           server-dir: /public_html/
+
+      - name: Run Composer and Artisan commands via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd /home/${{ secrets.SSH_USERNAME }}/domains/belajar.arkanaaks.id
+            composer install --no-dev --optimize-autoloader
+            php artisan optimize:clear
